@@ -1,0 +1,21 @@
+{
+    "name": "wolt-cli",
+    "version": "1.0.0",
+    "description": "CLI tool to track Wolt expenses",
+    "type": "module",
+    "main": "index.js",
+    "bin": {
+        "wolt-cli": "./index.js"
+    },
+    "scripts": {
+        "test": "echo \"Error: no test specified\" && exit 1"
+    },
+    "keywords": [],
+    "author": "",
+    "license": "ISC",
+    "dependencies": {
+        "axios": "^1.6.0",
+        "commander": "^11.0.0",
+        "conf": "^10.2.0"
+    }
+}
