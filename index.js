@@ -3,8 +3,11 @@
 import { Command } from 'commander';
 import { setToken, getToken } from './lib/config.js';
 import { getOrders, saveOrders, clearOrders } from './lib/storage.js';
-import { fetchOrdersPage } from './lib/wolt.js';
+import { fetchOrdersPage, fetchOrderDetails } from './lib/wolt.js';
 import { generateHtml } from './lib/report.js';
+import { runAuthFlow } from './lib/auth.js';
+import cliProgress from 'cli-progress';
+import inquirer from 'inquirer';
 import fs from 'fs/promises';
 
 const program = new Command();
@@ -16,9 +19,41 @@ program
 
 program.command('config')
     .description('Set the authentication token')
-    .requiredOption('-t, --token <token>', 'Wolt Authorization Bearer token')
-    .action((options) => {
-        setToken(options.token);
+    .option('-t, --token [token]', 'Wolt Authorization Bearer token')
+    .action(async (options) => {
+        let token = options.token;
+
+        if (!token || token === true) {
+            const answers = await inquirer.prompt([
+                {
+                    type: 'input',
+                    name: 'token',
+                    message: 'Enter your Wolt Authorization Bearer token:',
+                }
+            ]);
+            token = answers.token;
+        }
+
+        if (token) {
+            setToken(token);
+            console.log('Token saved to configuration successfully.');
+        } else {
+            console.log('No token provided.');
+        }
+    });
+
+program.command('auth')
+    .description('Login to Wolt and extract token automatically')
+    .action(async () => {
+        try {
+            const token = await runAuthFlow();
+            if (token) {
+                setToken(token);
+                console.log('Token saved to configuration successfully.');
+            }
+        } catch (error) {
+            console.error('Auth command failed:', error.message);
+        }
     });
 
 program.command('sync')
@@ -93,12 +128,52 @@ program.command('sync')
             }
         }
 
-        if (newOrders.length > 0) {
-            const allOrders = newOrders.concat(existingOrders);
-            await saveOrders(allOrders);
-            console.log(`Sync complete. Added ${newOrders.length} new orders.`);
+        const allOrders = newOrders.concat(existingOrders);
+        let detailsFetched = 0;
+
+        // Count orders missing details
+        const ordersMissingDetails = allOrders.filter(o => !o.details);
+
+        if (ordersMissingDetails.length > 0) {
+            console.log(`Fetching details for ${ordersMissingDetails.length} orders...`);
+            const progressBar = new cliProgress.SingleBar({}, cliProgress.Presets.shades_classic);
+            progressBar.start(ordersMissingDetails.length, 0);
+
+            for (const order of allOrders) {
+                if (!order.details) {
+                    const id = order.purchase_id || order.id;
+                    try {
+                        const details = await fetchOrderDetails(token, id);
+                        order.details = details;
+                        detailsFetched++;
+                        progressBar.increment();
+
+                        // Save progress every 5 orders to allow resuming if interrupted
+                        if (detailsFetched % 5 === 0) {
+                            await saveOrders(allOrders, true);
+                        }
+                    } catch (error) {
+                        // Stop bar to log error, then resume (or just log to stderr so bar stays?)
+                        // cli-progress might get messed up by console.error. 
+                        // Let's stop, log, restart or just log to a file? 
+                        // For now, let's just log error after bar or try to keep it simple.
+                        // Actually, let's stop the bar to log the error clearly.
+                        progressBar.stop();
+                        console.error(`\nFailed to fetch details for ${id}:`, error.message);
+                        progressBar.start(ordersMissingDetails.length, detailsFetched);
+                    }
+                }
+            }
+            progressBar.stop();
         } else {
-            console.log('Sync complete. No new orders found.');
+            console.log('All orders have details.');
+        }
+
+        if (newOrders.length > 0 || detailsFetched > 0) {
+            await saveOrders(allOrders);
+            console.log(`Sync complete. Added ${newOrders.length} new orders and fetched details for ${detailsFetched} orders.`);
+        } else {
+            console.log('Sync complete. No new orders or details found.');
         }
     });
 
