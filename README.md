@@ -4,9 +4,19 @@ A CLI tool to track your Wolt expenses by fetching order history and generating 
 
 ## Features
 
-- **Incremental Sync**: Fetches only new orders to save time and bandwidth.
+- **Incremental Sync**: Fetches only new orders to save time.
 - **Local Storage**: Saves order history locally in `~/.wolt-cli/orders.json`.
 - **HTML Reports**: Generates a searchable, filterable HTML report with spending summaries.
+
+## Examples
+
+(too embarrassed to show real numbers, so just some generated numbers for illustration)
+
+![Summaries](./images/summaries.png)
+
+![Monthly chart](./images/monthly-chart.png)
+
+![Orders](./images/orders.png)
 
 ## Installation
 
@@ -31,14 +41,17 @@ A CLI tool to track your Wolt expenses by fetching order history and generating 
 You need your Wolt Authorization token.
 1.  Log in to Wolt in your browser.
 2.  Open Developer Tools (Network tab).
-3.  Refresh or navigate to "Order History".
-4.  Find a request to `order_history` or similar.
+3.  Navigate to [https://wolt.com/en/me/order-history]("Order History" page).
+4.  Find a request to `order_history`.
 5.  Copy the value of the `Authorization` header (it starts with `Bearer ...`).
 
 Run the config command:
 ```bash
-wolt-cli config --token "eyJ..."
+wolt-cli config
 ```
+and provide token value when prompted.
+
+Unfortunately, automatic token retrieval blocked due to Wolt's bot-detection. Do you'll need to do this periodically.
 
 ### 2. Sync Orders
 
