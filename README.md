@@ -2,6 +2,8 @@
 
 A CLI tool to track your Wolt expenses by fetching order history and generating interactive HTML reports. Helps you understand the "real" cost of food delivery so we can cry together.
 
+This is a "quick and dirty" implementation mostly to satisfy curiosity and offload most of the code generation to Gemini, don't expect anything smart in the source code.
+
 ## Features
 
 - **Incremental Sync**: Fetches only new orders to save time.
