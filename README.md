@@ -1,6 +1,6 @@
 # Wolt CLI Expense Tracker
 
-A CLI tool to track your Wolt expenses by fetching order history and generating interactive HTML reports.
+A CLI tool to track your Wolt expenses by fetching order history and generating interactive HTML reports. Helps you understand the "real" cost of food delivery so we can cry together.
 
 ## Features
 
@@ -10,11 +10,11 @@ A CLI tool to track your Wolt expenses by fetching order history and generating 
 
 ## Examples
 
-(too embarrassed to show real numbers, so just some generated numbers for illustration)
+(I'm too embarrassed to show real numbers, so just some generated numbers for illustration)
 
 ![Summaries](./images/summaries.png)
 
-![Monthly chart](./images/monthly-chart.png)
+![Monthly chart](./images/monthly_chart.png)
 
 ![Orders](./images/orders.png)
 
@@ -41,7 +41,7 @@ A CLI tool to track your Wolt expenses by fetching order history and generating 
 You need your Wolt Authorization token.
 1.  Log in to Wolt in your browser.
 2.  Open Developer Tools (Network tab).
-3.  Navigate to [https://wolt.com/en/me/order-history]("Order History" page).
+3.  Navigate to the ["Order History" page](https://wolt.com/en/me/order-history).
 4.  Find a request to `order_history`.
 5.  Copy the value of the `Authorization` header (it starts with `Bearer ...`).
 
@@ -51,7 +51,7 @@ wolt-cli config
 ```
 and provide token value when prompted.
 
-Unfortunately, automatic token retrieval blocked due to Wolt's bot-detection. Do you'll need to do this periodically.
+Unfortunately, automatic token retrieval is blocked due to Wolt's bot-detection. So you'll need to do this periodically.
 
 ### 2. Sync Orders
 
