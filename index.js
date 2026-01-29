@@ -2,11 +2,8 @@
 
 import { Command } from 'commander';
 import { setToken, getToken } from './lib/config.js';
-import { getOrders, saveOrders, clearOrders } from './lib/storage.js';
-import { fetchOrdersPage, fetchOrderDetails } from './lib/wolt.js';
+import { getOrders } from './lib/storage.js';
 import { generateHtml } from './lib/report.js';
-import { runAuthFlow } from './lib/auth.js';
-import cliProgress from 'cli-progress';
 import inquirer from 'inquirer';
 import fs from 'fs/promises';
 import { runSync } from './lib/sync.js';
@@ -40,20 +37,6 @@ program.command('config')
             console.log('Token saved to configuration successfully.');
         } else {
             console.log('No token provided.');
-        }
-    });
-
-program.command('auth')
-    .description('Login to Wolt and extract token automatically')
-    .action(async () => {
-        try {
-            const token = await runAuthFlow();
-            if (token) {
-                setToken(token);
-                console.log('Token saved to configuration successfully.');
-            }
-        } catch (error) {
-            console.error('Auth command failed:', error.message);
         }
     });
 
