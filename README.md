@@ -6,13 +6,11 @@ This is a "quick and dirty" implementation mostly to satisfy curiosity and offlo
 
 ## Features
 
-- **Incremental Sync**: Fetches only new orders to save time.
+- **Incremental Sync**: Fetches only new orders to save time / avoid non-necessary API calls.
 - **Local Storage**: Saves order history locally in `~/.wolt-cli/orders.json`.
 - **HTML Reports**: Generates a searchable, filterable HTML report with spending summaries.
 
 ## Examples
-
-(I'm too embarrassed to show real numbers, so just some generated numbers for illustration)
 
 ![Summaries](./images/summaries.png)
 
