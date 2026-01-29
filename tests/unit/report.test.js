@@ -18,4 +18,10 @@ describe('Report Generation', () => {
         const html = await generateHtml([]);
         expect(html).toContain('id="total-spent-ytd">0</h2>');
     });
+
+    test('generateHtml should inject orders data correctly', async () => {
+        const orders = [{ id: 1, total_amount: 100 }];
+        const html = await generateHtml(orders);
+        expect(html).toContain('const orders = [{"id":1,"total_amount":100}];');
+    });
 });
