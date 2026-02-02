@@ -11,7 +11,7 @@ This is a "quick and dirty" implementation mostly to satisfy curiosity and offlo
 - **HTML Reports**: Generates a searchable, filterable HTML report with spending summaries.
 - **CSV Export**: Export order history to CSV for use in spreadsheets.
 - **Token Validation**: Validates your API token on save so you know immediately if it's expired.
-- **Graceful Interrupts**: Press Ctrl+C during sync and your progress is saved, not lost.
+
 
 ## Examples
 
@@ -71,8 +71,6 @@ To force a full re-sync (delete local cache and fetch everything again):
 ```bash
 wolt-cli sync --force
 ```
-
-You can safely press Ctrl+C during sync -- any progress made so far will be saved.
 
 ### 3. Generate Report
 
