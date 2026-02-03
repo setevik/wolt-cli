@@ -9,6 +9,9 @@ This is a "quick and dirty" implementation mostly to satisfy curiosity and offlo
 - **Incremental Sync**: Fetches only new orders to save time / avoid non-necessary API calls.
 - **Local Storage**: Saves order history locally in `~/.wolt-cli/orders.json`.
 - **HTML Reports**: Generates a searchable, filterable HTML report with spending summaries.
+- **CSV Export**: Export order history to CSV for use in spreadsheets.
+- **Token Validation**: Validates your API token on save so you know immediately if it's expired.
+
 
 ## Examples
 
@@ -49,7 +52,10 @@ Run the config command:
 ```bash
 wolt-cli config
 ```
-and provide token value when prompted.
+and provide token value when prompted. The token is validated against the Wolt API before saving. To skip validation:
+```bash
+wolt-cli config --skip-validation
+```
 
 Unfortunately, automatic token retrieval is blocked due to Wolt's bot-detection. So you'll need to do this periodically.
 
@@ -74,7 +80,38 @@ Generate an HTML report from your local data.
 wolt-cli report --output expenses.html
 ```
 
-Then open `expenses.html` in your browser.
+To generate and open in your browser in one step:
+```bash
+wolt-cli report --open
+```
+
+### 4. Export to CSV
+
+Export your order history to a CSV file for use in Excel, Google Sheets, etc.
+
+```bash
+wolt-cli export
+wolt-cli export --output my-orders.csv
+```
+
+### 5. Check Status
+
+View a quick summary of your local data without generating a report.
+
+```bash
+wolt-cli status
+```
+
+```
+  Wolt CLI Status
+  ───────────────────────────────
+  Orders stored:     247
+  With details:      247/247
+  Date range:        2022-03-15 to 2026-01-28
+  Total spent:       48231.50 (valid orders)
+  Storage size:      4.2 MB
+  Storage path:      ~/.wolt-cli/orders.json
+```
 
 ## Data Location
 
