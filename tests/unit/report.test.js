@@ -10,7 +10,7 @@ describe('Report Generation', () => {
 
     test('generateHtml handles empty orders', async () => {
         const html = await generateHtml([]);
-        expect(html).toContain('id="total-spent-ytd">0</h2>');
+        expect(html).toContain('id="total-spent-ytd" class="currency">₪0</h2>');
     });
 
     test('generateHtml should inject orders data correctly', async () => {
