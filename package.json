@@ -8,7 +8,8 @@
         "wolt-cli": "./index.js"
     },
     "scripts": {
-        "test": "NODE_OPTIONS=--experimental-vm-modules jest"
+        "test": "NODE_OPTIONS=--experimental-vm-modules jest",
+        "mock-report": "node scripts/mock-report.js"
     },
     "keywords": [],
     "author": "",
