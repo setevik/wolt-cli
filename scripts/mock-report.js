@@ -81,9 +81,9 @@ function generateOrder(date) {
         total_amount: `₪${(totalAmount / 100).toFixed(2)}`,
         details: {
             venue_product_line: venue.type,
-            items_price: { amount: itemsPrice },
-            delivery_base_price: { amount: deliveryFee },
-            service_fee: { amount: serviceFee },
+            items_price: itemsPrice,
+            delivery_base_price: deliveryFee,
+            service_fee: serviceFee,
             delivery_distance_in_meters: distance,
             order_items: items
         },
