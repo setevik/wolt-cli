@@ -3,7 +3,7 @@ import { exportCsv } from '../../lib/export.js';
 describe('exportCsv', () => {
     test('returns CSV with headers for empty orders', () => {
         const csv = exportCsv([]);
-        expect(csv).toBe('Date,Venue,Type,Items,Amount,Delivery Fee,Service Fee,Status\n');
+        expect(csv).toBe('Date,Venue,Type,Items,Amount,Currency,Delivery Fee,Service Fee,City,Country,Status\n');
     });
 
     test('exports order data correctly', () => {
@@ -23,7 +23,7 @@ describe('exportCsv', () => {
         const csv = exportCsv(orders);
         const lines = csv.trim().split('\n');
         expect(lines).toHaveLength(2);
-        expect(lines[0]).toBe('Date,Venue,Type,Items,Amount,Delivery Fee,Service Fee,Status');
+        expect(lines[0]).toBe('Date,Venue,Type,Items,Amount,Currency,Delivery Fee,Service Fee,City,Country,Status');
 
         const row = lines[1];
         expect(row).toContain('2025-01-15');

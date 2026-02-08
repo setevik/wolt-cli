@@ -12,23 +12,31 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Venue configurations with realistic data
+// Currency formatting helpers for mock data
+const CURRENCY_SYMBOLS = { 'ILS': '₪', 'CZK': 'Kč', 'EUR': '€', 'USD': '$', 'GBP': '£' };
+const SUFFIX_CURRENCY_SET = new Set(['CZK']);
+
+// Venue configurations with realistic data, including city, country, and currency
 const VENUES = [
-    { name: 'Golda', type: 'restaurant', avgPrice: 65, items: ['Shakshuka', 'Israeli Breakfast', 'Eggs Benedict', 'Pancakes'] },
-    { name: 'Japanika', type: 'restaurant', avgPrice: 95, items: ['Salmon Roll', 'Tuna Sashimi', 'Ramen', 'Gyoza', 'Edamame'] },
-    { name: 'Burgerim', type: 'restaurant', avgPrice: 75, items: ['Classic Burger', 'Cheese Burger', 'Fries', 'Onion Rings'] },
-    { name: 'Pizza Hut', type: 'restaurant', avgPrice: 85, items: ['Pepperoni Pizza', 'Margherita', 'Garlic Bread', 'Wings'] },
-    { name: 'Aroma Espresso Bar', type: 'restaurant', avgPrice: 55, items: ['Latte', 'Croissant', 'Sandwich', 'Salad'] },
-    { name: 'Sushi Yam', type: 'restaurant', avgPrice: 110, items: ['Combo Box', 'Dragon Roll', 'Nigiri Set', 'Miso Soup'] },
-    { name: 'Thai House', type: 'restaurant', avgPrice: 70, items: ['Pad Thai', 'Green Curry', 'Tom Yum', 'Spring Rolls'] },
-    { name: 'McDonald\'s', type: 'restaurant', avgPrice: 50, items: ['Big Mac', 'McChicken', 'Fries', 'McNuggets'] },
-    { name: 'Cafe Cafe', type: 'restaurant', avgPrice: 60, items: ['Pasta', 'Caesar Salad', 'Coffee', 'Cheesecake'] },
-    { name: 'Hummus Eliyahu', type: 'restaurant', avgPrice: 45, items: ['Hummus Plate', 'Falafel', 'Pita Bread', 'Salads'] },
-    { name: 'Shufersal', type: 'grocery', avgPrice: 180, items: ['Milk', 'Bread', 'Vegetables', 'Fruits', 'Cheese'] },
-    { name: 'AM:PM', type: 'grocery', avgPrice: 85, items: ['Snacks', 'Drinks', 'Sandwiches', 'Ice Cream'] },
-    { name: 'Super-Pharm', type: 'drugstore', avgPrice: 120, items: ['Vitamins', 'Shampoo', 'Skincare', 'Medicine'] },
-    { name: 'Yellow Grocery', type: 'grocery', avgPrice: 150, items: ['Groceries', 'Dairy', 'Meat', 'Produce'] },
-    { name: 'Wine & More', type: 'alcohol', avgPrice: 95, items: ['Red Wine', 'White Wine', 'Beer Pack', 'Whiskey'] },
+    { name: 'Golda', type: 'restaurant', avgPrice: 65, items: ['Shakshuka', 'Israeli Breakfast', 'Eggs Benedict', 'Pancakes'], city: 'Tel Aviv', country: 'Israel', currency: 'ILS' },
+    { name: 'Japanika', type: 'restaurant', avgPrice: 95, items: ['Salmon Roll', 'Tuna Sashimi', 'Ramen', 'Gyoza', 'Edamame'], city: 'Tel Aviv', country: 'Israel', currency: 'ILS' },
+    { name: 'Burgerim', type: 'restaurant', avgPrice: 75, items: ['Classic Burger', 'Cheese Burger', 'Fries', 'Onion Rings'], city: 'Haifa', country: 'Israel', currency: 'ILS' },
+    { name: 'Pizza Hut', type: 'restaurant', avgPrice: 85, items: ['Pepperoni Pizza', 'Margherita', 'Garlic Bread', 'Wings'], city: 'Jerusalem', country: 'Israel', currency: 'ILS' },
+    { name: 'Aroma Espresso Bar', type: 'restaurant', avgPrice: 55, items: ['Latte', 'Croissant', 'Sandwich', 'Salad'], city: 'Tel Aviv', country: 'Israel', currency: 'ILS' },
+    { name: 'Sushi Yam', type: 'restaurant', avgPrice: 110, items: ['Combo Box', 'Dragon Roll', 'Nigiri Set', 'Miso Soup'], city: 'Tel Aviv', country: 'Israel', currency: 'ILS' },
+    { name: 'Thai House', type: 'restaurant', avgPrice: 70, items: ['Pad Thai', 'Green Curry', 'Tom Yum', 'Spring Rolls'], city: 'Haifa', country: 'Israel', currency: 'ILS' },
+    { name: 'McDonald\'s', type: 'restaurant', avgPrice: 50, items: ['Big Mac', 'McChicken', 'Fries', 'McNuggets'], city: 'Tel Aviv', country: 'Israel', currency: 'ILS' },
+    { name: 'Cafe Cafe', type: 'restaurant', avgPrice: 60, items: ['Pasta', 'Caesar Salad', 'Coffee', 'Cheesecake'], city: 'Jerusalem', country: 'Israel', currency: 'ILS' },
+    { name: 'Hummus Eliyahu', type: 'restaurant', avgPrice: 45, items: ['Hummus Plate', 'Falafel', 'Pita Bread', 'Salads'], city: 'Haifa', country: 'Israel', currency: 'ILS' },
+    { name: 'Shufersal', type: 'grocery', avgPrice: 180, items: ['Milk', 'Bread', 'Vegetables', 'Fruits', 'Cheese'], city: 'Tel Aviv', country: 'Israel', currency: 'ILS' },
+    { name: 'AM:PM', type: 'grocery', avgPrice: 85, items: ['Snacks', 'Drinks', 'Sandwiches', 'Ice Cream'], city: 'Tel Aviv', country: 'Israel', currency: 'ILS' },
+    { name: 'Super-Pharm', type: 'drugstore', avgPrice: 120, items: ['Vitamins', 'Shampoo', 'Skincare', 'Medicine'], city: 'Tel Aviv', country: 'Israel', currency: 'ILS' },
+    { name: 'Yellow Grocery', type: 'grocery', avgPrice: 150, items: ['Groceries', 'Dairy', 'Meat', 'Produce'], city: 'Jerusalem', country: 'Israel', currency: 'ILS' },
+    { name: 'Wine & More', type: 'alcohol', avgPrice: 95, items: ['Red Wine', 'White Wine', 'Beer Pack', 'Whiskey'], city: 'Tel Aviv', country: 'Israel', currency: 'ILS' },
+    // Czech Republic venues (CZK)
+    { name: 'Potrefena Husa', type: 'restaurant', avgPrice: 280, items: ['Svickova', 'Goulash', 'Bramborak', 'Beer'], city: 'Prague', country: 'Czech Republic', currency: 'CZK' },
+    { name: 'Bohemia Bagel', type: 'restaurant', avgPrice: 220, items: ['Bagel Sandwich', 'Smoothie', 'Coffee', 'Salad'], city: 'Prague', country: 'Czech Republic', currency: 'CZK' },
+    { name: 'Rohlik.cz', type: 'grocery', avgPrice: 450, items: ['Milk', 'Bread', 'Cheese', 'Vegetables'], city: 'Brno', country: 'Czech Republic', currency: 'CZK' },
 ];
 
 // Generate a random date within a range
@@ -73,19 +81,28 @@ function generateOrder(date) {
     const totalAmount = itemsPrice + deliveryFee + serviceFee;
     const distance = randomInt(500, 5000);
 
+    const currencySymbol = CURRENCY_SYMBOLS[venue.currency] || venue.currency;
+    const isSuffix = SUFFIX_CURRENCY_SET.has(venue.currency);
+    const amountStr = isSuffix
+        ? `${(totalAmount / 100).toFixed(2)} ${currencySymbol}`
+        : `${currencySymbol}${(totalAmount / 100).toFixed(2)}`;
+
     return {
         id: `order_${Date.now()}_${randomInt(1000, 9999)}`,
         venue_name: venue.name,
         status: 'delivered',
         received_at: formatDate(date),
-        total_amount: `₪${(totalAmount / 100).toFixed(2)}`,
+        total_amount: amountStr,
         details: {
             venue_product_line: venue.type,
             items_price: itemsPrice,
             delivery_base_price: deliveryFee,
             service_fee: serviceFee,
             delivery_distance_in_meters: distance,
-            order_items: items
+            order_items: items,
+            currency: venue.currency,
+            venue_city: venue.city,
+            venue_country: venue.country
         },
         items: items
     };
