@@ -2,3 +2,4 @@ node_modules
 .DS_Store
 *.log
 mock-report.html
+demo-report.html

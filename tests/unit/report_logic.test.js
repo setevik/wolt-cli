@@ -165,3 +165,33 @@ describe('Report Logic', () => {
         });
     });
 });
+
+describe('processData time windows', () => {
+    const now = new Date(2026, 8, 23);
+    const order = (d, amount) => ({
+        total_amount: `€${amount.toFixed(2)}`,
+        received_at: `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}, 19:00`
+    });
+
+    test('compares this year with the same period last year', () => {
+        const data = processData([
+            order(new Date(2026, 2, 1), 100),
+            order(new Date(2025, 2, 1), 50),   // same period last year
+            order(new Date(2025, 10, 1), 500)  // later last year: excluded from YTD comparison
+        ], now);
+        expect(data.ytdTotal).toBeCloseTo(100);
+        expect(data.lastYearTotal).toBeCloseTo(550);
+        expect(data.lastYearToDateTotal).toBeCloseTo(50);
+    });
+
+    test('uses the given "now" for the 12-month window', () => {
+        const data = processData([
+            order(new Date(2025, 9, 5), 30),  // Oct 2025: inside
+            order(new Date(2025, 8, 5), 70)   // Sep 2025: outside
+        ], now);
+        expect(data.monthly).toHaveLength(12);
+        expect(data.monthly[0].label).toMatch(/Oct/);
+        expect(data.last12MonthsTotal).toBeCloseTo(30);
+        expect(data.last12MonthsOrderCount).toBe(1);
+    });
+});

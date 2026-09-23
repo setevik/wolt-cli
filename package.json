@@ -1,7 +1,7 @@
 {
     "name": "wolt-cli",
     "version": "1.0.0",
-    "description": "CLI tool to track Wolt expenses",
+    "description": "CLI tool to track Wolt expenses: sync your order history and get a local, interactive spending report",
     "type": "module",
     "main": "index.js",
     "bin": {
@@ -9,7 +9,9 @@
     },
     "scripts": {
         "test": "NODE_OPTIONS=--experimental-vm-modules jest",
-        "mock-report": "node scripts/mock-report.js"
+        "demo": "node index.js demo",
+        "mock-report": "node index.js demo -o mock-report.html",
+        "site": "node scripts/build-site.js"
     },
     "keywords": [],
     "author": "",

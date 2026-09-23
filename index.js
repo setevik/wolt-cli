@@ -5,6 +5,7 @@ import { setToken, getToken } from './lib/config.js';
 import { getOrders } from './lib/storage.js';
 import { generateHtml, parseAmount, getOrderDate } from './lib/report.js';
 import { exportCsv } from './lib/export.js';
+import { generateDemoOrders } from './lib/demo.js';
 import { validateToken } from './lib/wolt.js';
 import inquirer from 'inquirer';
 import fs from 'fs/promises';
@@ -14,6 +15,14 @@ import path from 'path';
 import { runSync } from './lib/sync.js';
 
 const program = new Command();
+
+function openInBrowser(filePath) {
+    const platform = process.platform;
+    const cmd = platform === 'darwin' ? 'open' : platform === 'win32' ? 'start ""' : 'xdg-open';
+    exec(`${cmd} "${filePath}"`, (err) => {
+        if (err) console.error('Could not open browser automatically. Open the file manually.');
+    });
+}
 
 program
     .name('wolt-cli')
@@ -106,15 +115,45 @@ program.command('report')
             await fs.writeFile(outputPath, html);
             console.log(`Report generated: ${outputPath}`);
 
-            if (options.open) {
-                const platform = process.platform;
-                const cmd = platform === 'darwin' ? 'open' : platform === 'win32' ? 'start' : 'xdg-open';
-                exec(`${cmd} "${outputPath}"`, (err) => {
-                    if (err) console.error('Could not open browser automatically. Open the file manually.');
-                });
-            }
+            if (options.open) openInBrowser(outputPath);
         } catch (error) {
             console.error('Error generating report:', error.message);
+            process.exitCode = 1;
+        }
+    });
+
+program.command('demo')
+    .description('Generate a report from realistic made-up data (no account needed)')
+    .option('-o, --output <file>', 'Output HTML file', 'demo-report.html')
+    .option('--open', 'Open the report in your default browser')
+    .option('--seed <number>', 'Random seed; the same seed gives the same data', '7')
+    .option('--as-of <date>', 'End date of the demo history (YYYY-MM-DD, default: today)')
+    .option('--json <file>', 'Also write the generated orders as JSON')
+    .action(async (options) => {
+        try {
+            const seed = parseInt(options.seed, 10);
+            if (Number.isNaN(seed)) throw new Error('--seed must be a number');
+            let asOf = new Date();
+            if (options.asOf) {
+                const [y, m, d] = options.asOf.split('-').map(Number);
+                asOf = new Date(y, m - 1, d, 23, 59);
+                if (Number.isNaN(asOf.getTime())) throw new Error('--as-of must be YYYY-MM-DD');
+            }
+
+            const orders = generateDemoOrders({ seed, endDate: asOf });
+            const html = await generateHtml(orders, { asOf, demo: true });
+            const outputPath = path.resolve(options.output);
+            await fs.writeFile(outputPath, html);
+            console.log(`Generated ${orders.length} demo orders (seed ${seed}).`);
+            console.log(`Demo report: ${outputPath}`);
+
+            if (options.json) {
+                await fs.writeFile(path.resolve(options.json), JSON.stringify(orders, null, 2));
+                console.log(`Demo orders: ${path.resolve(options.json)}`);
+            }
+            if (options.open) openInBrowser(outputPath);
+        } catch (error) {
+            console.error('Error generating demo report:', error.message);
             process.exitCode = 1;
         }
     });
