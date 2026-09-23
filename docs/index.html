@@ -1,0 +1,728 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>wolt-cli: see what food delivery really costs you</title>
+    <meta name="description" content="A small command-line tool that downloads your Wolt order history to your computer and turns it into a private, interactive spending report.">
+    <meta property="og:title" content="wolt-cli">
+    <meta property="og:description" content="Download your Wolt order history and get a private, interactive spending report. Unofficial, local-only, open source.">
+    <meta property="og:image" content="assets/report-overview.png">
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%232a78d6'/%3E%3Cpath d='M9 22V14M16 22V9M23 22V17' stroke='white' stroke-width='3' stroke-linecap='round'/%3E%3C/svg%3E">
+    <style>
+        /* Same tokens as the report, so the site and the product look like one thing */
+        :root {
+            color-scheme: light;
+            --page: #fcfcfb;
+            --surface: #ffffff;
+            --surface-2: #f4f4f1;
+            --ink: #0b0b0b;
+            --ink-2: #52514e;
+            --ink-3: #6f6e69;
+            --line: rgba(11, 11, 11, 0.10);
+            --accent: #2a78d6;
+            --accent-ink: #1c5cab;
+            --accent-wash: rgba(42, 120, 214, 0.10);
+            --good: #006300;
+            --bad: #b42f2f;
+            --code-bg: #f4f4f1;
+            --font: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+            --radius: 10px;
+            --radius-lg: 14px;
+        }
+
+        :root[data-theme="dark"] {
+            color-scheme: dark;
+            --page: #0d0d0d;
+            --surface: #1a1a19;
+            --surface-2: #232322;
+            --ink: #ffffff;
+            --ink-2: #c3c2b7;
+            --ink-3: #9a9992;
+            --line: rgba(255, 255, 255, 0.10);
+            --accent: #3987e5;
+            --accent-ink: #86b6ef;
+            --accent-wash: rgba(57, 135, 229, 0.16);
+            --good: #0ca30c;
+            --bad: #e66767;
+            --code-bg: #1a1a19;
+        }
+
+        * { box-sizing: border-box; }
+
+        html { scroll-behavior: smooth; }
+
+        body {
+            margin: 0;
+            background: var(--page);
+            color: var(--ink);
+            font-family: var(--font);
+            font-size: 16px;
+            line-height: 1.6;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        a { color: var(--accent-ink); text-underline-offset: 3px; }
+        [data-theme="dark"] a { color: var(--accent-ink); }
+        :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+        .wrap { max-width: 1080px; margin: 0 auto; padding: 0 24px; }
+
+        /* Nav */
+        .nav {
+            position: sticky;
+            top: 0;
+            z-index: 5;
+            background: color-mix(in srgb, var(--page) 88%, transparent);
+            backdrop-filter: blur(8px);
+            border-bottom: 1px solid var(--line);
+        }
+
+        .nav .wrap {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            height: 56px;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: var(--ink);
+            font-weight: 650;
+            text-decoration: none;
+        }
+
+        .brand svg { width: 24px; height: 24px; }
+
+        .nav-links { display: flex; align-items: center; gap: 24px; font-size: 14px; }
+        .nav-links a { color: var(--ink-2); text-decoration: none; }
+        .nav-links a:hover { color: var(--ink); }
+
+        .icon-btn {
+            display: inline-grid;
+            place-items: center;
+            width: 34px;
+            height: 34px;
+            padding: 0;
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            background: var(--surface);
+            color: var(--ink);
+            cursor: pointer;
+        }
+
+        .icon-btn svg { width: 16px; height: 16px; }
+        .icon-sun { display: none; }
+        [data-theme="dark"] .icon-sun { display: block; }
+        [data-theme="dark"] .icon-moon { display: none; }
+
+        /* Hero */
+        .hero { padding: 96px 0 56px; }
+
+        .eyebrow {
+            display: inline-block;
+            margin: 0 0 20px;
+            padding: 4px 10px;
+            border: 1px solid var(--line);
+            border-radius: 999px;
+            color: var(--ink-2);
+            font-size: 13px;
+        }
+
+        h1 {
+            max-width: 760px;
+            margin: 0;
+            font-size: clamp(36px, 6vw, 60px);
+            line-height: 1.05;
+            letter-spacing: -0.03em;
+            font-weight: 700;
+        }
+
+        .lede {
+            max-width: 620px;
+            margin: 24px 0 0;
+            font-size: 19px;
+            color: var(--ink-2);
+        }
+
+        .cta { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 32px; }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            height: 44px;
+            padding: 0 20px;
+            border-radius: var(--radius);
+            border: 1px solid var(--line);
+            background: var(--surface);
+            color: var(--ink) !important;
+            font-weight: 550;
+            text-decoration: none;
+        }
+
+        .btn:hover { background: var(--surface-2); }
+
+        .btn-primary {
+            background: var(--ink);
+            border-color: var(--ink);
+            color: var(--page) !important;
+        }
+
+        .btn-primary:hover { background: var(--ink-2); }
+
+        .hero-note { margin: 20px 0 0; font-size: 14px; color: var(--ink-3); }
+
+        /* Sections */
+        section { padding: 72px 0; border-top: 1px solid var(--line); }
+
+        .kicker {
+            margin: 0 0 8px;
+            color: var(--accent-ink);
+            font-size: 13px;
+            font-weight: 600;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+        }
+
+        h2 {
+            margin: 0;
+            font-size: clamp(26px, 3.4vw, 36px);
+            line-height: 1.15;
+            letter-spacing: -0.02em;
+        }
+
+        .section-lede { max-width: 640px; margin: 12px 0 0; color: var(--ink-2); }
+
+        /* Preview */
+        .preview { margin-top: 32px; }
+
+        .preview-tabs {
+            display: flex;
+            gap: 4px;
+            padding: 4px;
+            border: 1px solid var(--line);
+            border-radius: 12px;
+            background: var(--surface);
+            overflow-x: auto;
+            scrollbar-width: none;
+        }
+
+        .preview-tabs button {
+            flex-shrink: 0;
+            padding: 8px 14px;
+            border: 0;
+            border-radius: 8px;
+            background: none;
+            color: var(--ink-2);
+            font: inherit;
+            font-size: 14px;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+
+        .preview-tabs button:hover { background: var(--surface-2); color: var(--ink); }
+
+        .preview-tabs button[aria-selected="true"] {
+            background: var(--ink);
+            color: var(--page);
+        }
+
+        .preview-caption {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            flex-wrap: wrap;
+            gap: 8px 24px;
+            margin: 20px 0 12px;
+        }
+
+        .preview-caption p { margin: 0; max-width: 680px; color: var(--ink-2); }
+        .preview-caption a { font-size: 14px; white-space: nowrap; }
+
+        .frame {
+            border: 1px solid var(--line);
+            border-radius: var(--radius-lg);
+            background: var(--surface-2);
+            overflow: hidden;
+        }
+
+        .frame-bar {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            height: 36px;
+            padding: 0 14px;
+            border-bottom: 1px solid var(--line);
+            background: var(--surface);
+            color: var(--ink-3);
+            font-size: 12px;
+        }
+
+        .frame-bar i { width: 10px; height: 10px; border-radius: 50%; background: var(--line); }
+        .frame-bar span { margin-left: 10px; font-family: var(--mono); }
+
+        .frame iframe {
+            display: block;
+            width: 100%;
+            height: 520px;
+            border: 0;
+            transition: height 0.2s ease;
+        }
+
+        /* Features */
+        .features {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 1px;
+            margin-top: 40px;
+            border: 1px solid var(--line);
+            border-radius: var(--radius-lg);
+            background: var(--line);
+            overflow: hidden;
+        }
+
+        .feature { padding: 28px; background: var(--page); }
+
+        .feature svg { width: 22px; height: 22px; color: var(--accent); }
+
+        .feature h3 { margin: 14px 0 6px; font-size: 17px; }
+
+        .feature p { margin: 0; color: var(--ink-2); font-size: 15px; }
+
+        /* Fit */
+        .fit {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 24px;
+            margin-top: 40px;
+        }
+
+        .fit-card {
+            padding: 28px;
+            border: 1px solid var(--line);
+            border-radius: var(--radius-lg);
+            background: var(--surface);
+        }
+
+        .fit-card h3 {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin: 0 0 16px;
+            font-size: 18px;
+        }
+
+        .fit-card ul { margin: 0; padding: 0; list-style: none; }
+
+        .fit-card li {
+            position: relative;
+            padding: 10px 0 10px 28px;
+            border-top: 1px solid var(--line);
+            color: var(--ink-2);
+        }
+
+        .fit-card li:first-child { border-top: 0; }
+        .fit-card li strong { color: var(--ink); font-weight: 600; }
+
+        .fit-card li::before {
+            position: absolute;
+            left: 0;
+            top: 10px;
+            font-weight: 700;
+        }
+
+        .fit-yes li::before { content: "\2713"; color: var(--good); }
+        .fit-no li::before { content: "\2715"; color: var(--bad); }
+
+        /* Steps */
+        .steps {
+            display: grid;
+            gap: 16px;
+            margin: 40px 0 0;
+            padding: 0;
+            list-style: none;
+            counter-reset: step;
+        }
+
+        .step {
+            display: grid;
+            grid-template-columns: 40px minmax(0, 1fr);
+            gap: 4px 16px;
+            counter-increment: step;
+        }
+
+        .step::before {
+            content: counter(step);
+            grid-row: span 3;
+            display: grid;
+            place-items: center;
+            width: 32px;
+            height: 32px;
+            border: 1px solid var(--line);
+            border-radius: 50%;
+            color: var(--ink-2);
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .step h3 { margin: 4px 0 0; font-size: 17px; }
+        .step p { margin: 0; color: var(--ink-2); }
+
+        pre {
+            margin: 8px 0 0;
+            padding: 14px 16px;
+            border: 1px solid var(--line);
+            border-radius: var(--radius);
+            background: var(--code-bg);
+            overflow-x: auto;
+            font-family: var(--mono);
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        code { font-family: var(--mono); font-size: 0.92em; }
+        p code, li code { padding: 1px 5px; border-radius: 5px; background: var(--surface-2); }
+        .comment { color: var(--ink-3); }
+
+        /* Privacy + FAQ */
+        .two-col {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+            gap: 48px;
+            margin-top: 40px;
+        }
+
+        dl.facts { margin: 0; }
+        dl.facts dt { font-weight: 600; margin-top: 20px; }
+        dl.facts dt:first-child { margin-top: 0; }
+        dl.facts dd { margin: 4px 0 0; color: var(--ink-2); }
+
+        details {
+            border-top: 1px solid var(--line);
+            padding: 16px 0;
+        }
+
+        details:last-child { border-bottom: 1px solid var(--line); }
+
+        summary {
+            cursor: pointer;
+            font-weight: 600;
+            list-style: none;
+            display: flex;
+            justify-content: space-between;
+            gap: 16px;
+        }
+
+        summary::-webkit-details-marker { display: none; }
+        summary::after { content: "+"; color: var(--ink-3); font-weight: 400; }
+        details[open] summary::after { content: "\2212"; }
+        details p { margin: 10px 0 0; color: var(--ink-2); }
+
+        footer {
+            padding: 40px 0 56px;
+            border-top: 1px solid var(--line);
+            color: var(--ink-3);
+            font-size: 14px;
+        }
+
+        footer .wrap { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
+
+        @media (max-width: 860px) {
+            .features { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+            .fit, .two-col { grid-template-columns: minmax(0, 1fr); }
+        }
+
+        @media (max-width: 600px) {
+            .wrap { padding: 0 16px; }
+            .nav-links a:not(.keep) { display: none; }
+            .hero { padding: 56px 0 40px; }
+            .lede { font-size: 17px; }
+            section { padding: 56px 0; }
+            .features { grid-template-columns: minmax(0, 1fr); }
+            .feature, .fit-card { padding: 22px; }
+            .frame iframe { height: 460px; }
+        }
+    </style>
+</head>
+
+<body>
+    <nav class="nav" aria-label="Main">
+        <div class="wrap">
+            <a class="brand" href="#top">
+                <svg viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="8" fill="#2a78d6"/><path d="M9 22V14M16 22V9M23 22V17" stroke="#fff" stroke-width="3" stroke-linecap="round"/></svg>
+                wolt-cli
+            </a>
+            <div class="nav-links">
+                <a href="#preview">Preview</a>
+                <a href="#features">Features</a>
+                <a href="#fit">Is it for you?</a>
+                <a href="#install">Install</a>
+                <a class="keep" href="https://github.com/setevik/wolt-cli">GitHub</a>
+                <button class="icon-btn" type="button" id="theme-toggle" aria-label="Toggle dark mode" title="Toggle dark mode">
+                    <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+                    <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <main id="top">
+        <header class="hero">
+            <div class="wrap">
+                <p class="eyebrow">Open source · runs on your computer</p>
+                <h1>See what food delivery really costs you.</h1>
+                <p class="lede">
+                    wolt-cli downloads your Wolt order history and turns it into a private, interactive
+                    spending report: totals, trends, fees, favourite places and every order, in one HTML file.
+                </p>
+                <div class="cta">
+                    <a class="btn btn-primary" href="demo/">Open the live demo</a>
+                    <a class="btn" href="#install">Install in 3 steps</a>
+                </div>
+                <p class="hero-note">Unofficial community project, not affiliated with or endorsed by Wolt.</p>
+            </div>
+        </header>
+
+        <section id="preview">
+            <div class="wrap">
+                <p class="kicker">Preview</p>
+                <h2>Click through a real report</h2>
+                <p class="section-lede">
+                    Everything below is the actual report, generated from made-up data for a person living in
+                    Berlin who also ordered on trips to Hamburg and Prague. Hover the charts, click a venue or a day.
+                </p>
+
+                <div class="preview">
+                    <div class="preview-tabs" role="tablist" aria-label="Report sections" id="preview-tabs"></div>
+                    <div class="preview-caption">
+                        <p id="preview-caption"></p>
+                        <a href="demo/" id="preview-open">Open the full report &rarr;</a>
+                    </div>
+                    <div class="frame">
+                        <div class="frame-bar" aria-hidden="true"><i></i><i></i><i></i><span>report.html</span></div>
+                        <iframe id="preview-frame" title="Report preview" loading="lazy"></iframe>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="features">
+            <div class="wrap">
+                <p class="kicker">Features</p>
+                <h2>Small tool, complete picture</h2>
+                <p class="section-lede">Four commands: <code>config</code>, <code>sync</code>, <code>report</code> and <code>export</code>. Nothing to host, nothing to sign up for.</p>
+
+                <div class="features">
+                    <article class="feature">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-3-6.7L21 8"/><path d="M21 3v5h-5"/></svg>
+                        <h3>Incremental sync</h3>
+                        <p>The first sync downloads your full history. After that only new orders are fetched, politely paced to avoid rate limits.</p>
+                    </article>
+                    <article class="feature">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3v18h18"/><path d="M7 15l4-4 3 3 5-6"/></svg>
+                        <h3>Spending overview</h3>
+                        <p>Lifetime total, this year against the same period last year, the last 12 months and a monthly chart split by category.</p>
+                    </article>
+                    <article class="feature">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v10M9.5 9.5c0-1.1 1.1-2 2.5-2s2.5.9 2.5 2-1.1 1.7-2.5 2-2.5.9-2.5 2 1.1 2 2.5 2 2.5-.9 2.5-2"/></svg>
+                        <h3>The fee reality check</h3>
+                        <p>See exactly how much went to delivery and service fees, per order and in total, next to the price of the food itself.</p>
+                    </article>
+                    <article class="feature">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4"/></svg>
+                        <h3>Habits and patterns</h3>
+                        <p>A year-long activity calendar, busiest weekday, late-night orders, top venues, most ordered dishes and the cities you ordered in.</p>
+                    </article>
+                    <article class="feature">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+                        <h3>Searchable order list</h3>
+                        <p>Filter by venue, dish, city, type, currency or date range. Expand any order for its items and cost breakdown, then export to CSV.</p>
+                    </article>
+                    <article class="feature">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg>
+                        <h3>Multiple currencies</h3>
+                        <p>Ordered abroad? Each currency gets its own totals instead of being added together. Switch between them in one click.</p>
+                    </article>
+                </div>
+            </div>
+        </section>
+
+        <section id="fit">
+            <div class="wrap">
+                <p class="kicker">Is it for you?</p>
+                <h2>A good fit, or not quite</h2>
+                <p class="section-lede">wolt-cli is a small, focused tool. Here is an honest summary to help you decide before installing anything.</p>
+
+                <div class="fit">
+                    <div class="fit-card fit-yes">
+                        <h3>Good fit if you</h3>
+                        <ul>
+                            <li><strong>Order on Wolt regularly</strong> and want the real totals, not a guess.</li>
+                            <li><strong>Want your data to stay local.</strong> Orders are stored in a file on your computer and the report works offline once opened.</li>
+                            <li><strong>Are comfortable with a terminal</strong> and have Node.js 20 or newer installed.</li>
+                            <li><strong>Like to dig into details</strong>: search, filter, and export to a spreadsheet for your own analysis.</li>
+                            <li><strong>Order in more than one country</strong> and want amounts kept separate by currency.</li>
+                        </ul>
+                    </div>
+                    <div class="fit-card fit-no">
+                        <h3>Probably not for you if you</h3>
+                        <ul>
+                            <li><strong>Want a one-click app.</strong> You need to copy a login token from your browser's developer tools, and it expires, so you'll repeat that now and then.</li>
+                            <li><strong>Need budgets, alerts or a mobile app.</strong> This is a report you generate, not a service that watches your spending.</li>
+                            <li><strong>Use other delivery apps too.</strong> Only Wolt is supported.</li>
+                            <li><strong>Need guaranteed stability.</strong> It relies on Wolt's unofficial web API, which can change without notice.</li>
+                            <li><strong>Want currency conversion.</strong> Totals are per currency; nothing is converted to a single figure.</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="install">
+            <div class="wrap">
+                <p class="kicker">Get started</p>
+                <h2>From zero to report in three steps</h2>
+                <p class="section-lede">Requires <a href="https://nodejs.org/">Node.js</a> 20.12 or newer. Want to look around first? <code>npm run demo</code> builds a report from sample data without a Wolt account.</p>
+
+                <ol class="steps">
+                    <li class="step">
+                        <h3>Install</h3>
+                        <p>Clone the repository and link the command.</p>
+<pre><code>git clone https://github.com/setevik/wolt-cli.git
+cd wolt-cli
+npm install
+npm link</code></pre>
+                    </li>
+                    <li class="step">
+                        <h3>Add your token</h3>
+                        <p>Log in at wolt.com, open developer tools &rarr; Network, visit <em>Order history</em>, and copy the <code>Authorization</code> header of the <code>order_history</code> request.</p>
+<pre><code>wolt-cli config   <span class="comment"># paste the token; it's checked before saving</span></code></pre>
+                    </li>
+                    <li class="step">
+                        <h3>Sync and open your report</h3>
+                        <p>The first sync fetches details for every order, roughly two seconds each, so a few hundred orders take several minutes. Later syncs are quick.</p>
+<pre><code>wolt-cli sync
+wolt-cli report --open</code></pre>
+                    </li>
+                </ol>
+            </div>
+        </section>
+
+        <section id="privacy">
+            <div class="wrap">
+                <p class="kicker">Privacy &amp; FAQ</p>
+                <h2>Where your data goes</h2>
+
+                <div class="two-col">
+                    <dl class="facts">
+                        <dt>Your token</dt>
+                        <dd>Stored only in <code>~/.wolt-cli/config.json</code> and sent only to Wolt's own API.</dd>
+                        <dt>Your orders</dt>
+                        <dd>Saved to <code>~/.wolt-cli/orders.json</code>. Nothing is uploaded anywhere else.</dd>
+                        <dt>The report</dt>
+                        <dd>A single self-contained HTML file with your data inside. The only external request it makes is loading the Chart.js library from jsDelivr to draw the charts.</dd>
+                        <dt>No telemetry</dt>
+                        <dd>No analytics, no accounts, no servers. Read the source; it's small.</dd>
+                    </dl>
+
+                    <div>
+                        <details>
+                            <summary>Why do I have to copy a token by hand?</summary>
+                            <p>Wolt's bot protection blocks automated logins, so the tool uses the session token from your own browser. When it expires, <code>wolt-cli sync</code> fails and you run <code>wolt-cli config</code> again.</p>
+                        </details>
+                        <details>
+                            <summary>Can I share my report?</summary>
+                            <p>You can, but remember it contains your full order history. For showing the tool to others, share the demo instead: <code>wolt-cli demo</code> creates one from made-up data.</p>
+                        </details>
+                        <details>
+                            <summary>Does it work in my country?</summary>
+                            <p>It should work anywhere Wolt does. Amounts are grouped by the currency you paid in, and the report shows the cities you ordered from.</p>
+                        </details>
+                        <details>
+                            <summary>Can I analyse the data elsewhere?</summary>
+                            <p>Yes. <code>wolt-cli export</code> writes a CSV with date, venue, items, amount, currency, fees, city and status, ready for any spreadsheet.</p>
+                        </details>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <div class="wrap">
+            <span>wolt-cli · unofficial, not affiliated with Wolt</span>
+            <a href="https://github.com/setevik/wolt-cli">Source on GitHub</a>
+        </div>
+    </footer>
+
+    <script>
+        const SECTIONS = [
+            { id: 'summary', label: 'Summary', caption: 'Lifetime total, this year compared with the same dates last year, the last 12 months, and what fees have added up to.' },
+            { id: 'monthly', label: 'Monthly spending', caption: 'Twelve months of spending, split by venue type, with delivery and service fees stacked on top. Hover a month for the breakdown.' },
+            { id: 'costs', label: 'Where the money goes', caption: 'The all-time split between food and fees, and how much fees add to an average order.' },
+            { id: 'activity', label: 'Activity', caption: 'A calendar of the last year, shaded by how much was spent each day. Hover to see venues; click a day to jump to its orders.' },
+            { id: 'venues', label: 'Top venues', caption: 'Favourite places ranked by total spent. In the full report, clicking one filters the order list.' },
+            { id: 'habits', label: 'Habits', caption: 'Busiest weekday, order frequency, biggest order, late-night orders and the cities you ordered in.' },
+            { id: 'orders', label: 'Order list', caption: 'Every order, searchable and sortable. Click a row for the items and a cost breakdown; export whatever you filtered to CSV.' }
+        ];
+
+        const root = document.documentElement;
+        const frame = document.getElementById('preview-frame');
+        const tabs = document.getElementById('preview-tabs');
+        const caption = document.getElementById('preview-caption');
+        const openLink = document.getElementById('preview-open');
+        let current = 'summary';
+
+        function theme() { return root.getAttribute('data-theme') === 'dark' ? 'dark' : 'light'; }
+
+        function show(id) {
+            current = id;
+            const s = SECTIONS.find(x => x.id === id);
+            tabs.querySelectorAll('button').forEach(b => b.setAttribute('aria-selected', String(b.dataset.id === id)));
+            caption.textContent = s.caption;
+            openLink.href = id === 'orders' ? 'demo/#orders' : `demo/#${id}`;
+            frame.src = `demo/?embed=1&section=${id}&theme=${theme()}`;
+        }
+
+        SECTIONS.forEach(s => {
+            const b = document.createElement('button');
+            b.type = 'button';
+            b.role = 'tab';
+            b.dataset.id = s.id;
+            b.textContent = s.label;
+            b.addEventListener('click', () => show(s.id));
+            tabs.appendChild(b);
+        });
+
+        // The embedded report reports its height so the frame fits its content
+        window.addEventListener('message', e => {
+            if (e.source !== frame.contentWindow || !e.data || e.data.type !== 'wolt-report-height') return;
+            const max = current === 'orders' ? 720 : 1400;
+            frame.style.height = `${Math.min(Math.max(e.data.height, 240), max)}px`;
+        });
+
+        function applyTheme(t) {
+            root.setAttribute('data-theme', t);
+            if (frame.contentWindow) frame.contentWindow.postMessage({ type: 'wolt-report-theme', theme: t }, '*');
+        }
+
+        let saved = null;
+        try { saved = localStorage.getItem('wolt-site-theme'); } catch {}
+        applyTheme(saved || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'));
+        document.getElementById('theme-toggle').addEventListener('click', () => {
+            const t = theme() === 'dark' ? 'light' : 'dark';
+            try { localStorage.setItem('wolt-site-theme', t); } catch {}
+            applyTheme(t);
+        });
+
+        show('summary');
+    </script>
+</body>
+
+</html>
