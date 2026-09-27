@@ -4,16 +4,21 @@ A CLI tool to track your Wolt expenses by fetching order history and generating 
 
 This is a "quick and dirty" implementation mostly to satisfy curiosity and offload most of the code generation to Gemini, don't expect anything smart in the source code.
 
+**Website & live demo:** https://setevik.github.io/wolt-cli/
+
 ## Features
 
 - **Incremental Sync**: Fetches only new orders to save time / avoid non-necessary API calls.
 - **Local Storage**: Saves order history locally in `~/.wolt-cli/orders.json`.
-- **HTML Reports**: Generates a searchable, filterable HTML report with spending summaries.
+- **HTML Reports**: A single self-contained, searchable, filterable HTML report: lifetime and yearly totals (compared with the same period last year), monthly chart, fee breakdown, activity calendar, top venues and items, habits, and a full order list. Light and dark mode.
+- **Multi-currency**: Orders paid in different currencies are totalled separately, with a currency switcher.
 - **CSV Export**: Export order history to CSV for use in spreadsheets.
 - **Token Validation**: Validates your API token on save so you know immediately if it's expired.
-
+- **Demo Mode**: `wolt-cli demo` builds a report from realistic made-up data, no account needed.
 
 ## Examples
+
+Screenshots come from the demo report (made-up data).
 
 ![Summaries](./images/summaries.png)
 
@@ -22,6 +27,8 @@ This is a "quick and dirty" implementation mostly to satisfy curiosity and offlo
 ![Orders](./images/orders.png)
 
 ## Installation
+
+Requires Node.js 20.12 or newer.
 
 1.  Clone the repository:
     ```bash
@@ -85,7 +92,20 @@ To generate and open in your browser in one step:
 wolt-cli report --open
 ```
 
-### 4. Export to CSV
+The report loads Chart.js from jsDelivr to draw its charts; everything else, including your data, is inside the HTML file.
+
+### 4. Try it without an account
+
+Generate a report from realistic, reproducible demo data: a Berlin-based persona paying in EUR, with trips to Prague paid in CZK. Totals always add up to items + delivery fee + service fee.
+
+```bash
+wolt-cli demo --open
+wolt-cli demo --seed 3 --as-of 2026-06-30 --output demo.html --json demo-orders.json
+```
+
+Or without linking the CLI: `npm run demo`.
+
+### 5. Export to CSV
 
 Export your order history to a CSV file for use in Excel, Google Sheets, etc.
 
@@ -94,7 +114,7 @@ wolt-cli export
 wolt-cli export --output my-orders.csv
 ```
 
-### 5. Check Status
+### 6. Check Status
 
 View a quick summary of your local data without generating a report.
 
@@ -117,3 +137,14 @@ wolt-cli status
 
 - **Orders**: `~/.wolt-cli/orders.json`
 - **Config**: `~/.wolt-cli/config.json`
+
+## Project Site
+
+The GitHub Pages site lives in `docs/` (Settings → Pages → Deploy from branch → `main` / `docs`).
+`docs/demo/index.html` is the demo report; regenerate it after changing the report or the demo generator:
+
+```bash
+npm run site                       # demo history ends today
+npm run site -- --as-of 2026-09-23 # or pin the end date
+```
+
