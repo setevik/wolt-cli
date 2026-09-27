@@ -140,11 +140,10 @@ wolt-cli status
 
 ## Project Site
 
-The GitHub Pages site lives in `docs/` (Settings → Pages → Deploy from branch → `main` / `docs`).
+The GitHub Pages site lives in `docs/` (Settings → Pages → Deploy from branch → `master` / `docs`).
 `docs/demo/index.html` is the demo report; regenerate it after changing the report or the demo generator:
 
 ```bash
 npm run site                       # demo history ends today
 npm run site -- --as-of 2026-09-23 # or pin the end date
 ```
-
